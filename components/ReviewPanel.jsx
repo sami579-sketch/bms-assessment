@@ -127,18 +127,28 @@ export default function ReviewPanel({ assessment, onEditProfile, onEditWheelchai
               )}
             </button>
           ) : (
-            <div className="w-full flex items-center justify-center gap-2 py-3.5 bg-bw-greenLight border-2 border-bw-green rounded-xl text-bw-greenDark font-semibold text-sm">
-              <svg className="w-5 h-5 text-bw-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              PDF exported &amp; sent to {assessment.assessor_email}
+            <div className="space-y-3">
+              <div className="w-full flex items-center justify-center gap-2 py-3.5 bg-bw-greenLight border-2 border-bw-green rounded-xl text-bw-greenDark font-semibold text-sm">
+                <svg className="w-5 h-5 text-bw-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                PDF exported &amp; sent to {assessment.assessor_email}
+              </div>
+              <button
+                onClick={onNewAssessment}
+                className="w-full py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 bg-ms-navy active:scale-[0.98] transition-transform"
+              >
+                <PlusIcon /> Start New Assessment
+              </button>
             </div>
           )}
 
-          {/* Email notice */}
-          <p className="text-center text-xs text-clinical-400 mt-2">
-            PDF will download to your device and email automatically to <span className="font-semibold text-clinical-600">{assessment.assessor_email}</span>
-          </p>
+          {/* Email notice — only before export */}
+          {!done && (
+            <p className="text-center text-xs text-clinical-400 mt-2">
+              PDF will download to your device and email automatically to <span className="font-semibold text-clinical-600">{assessment.assessor_email}</span>
+            </p>
+          )}
         </div>
       </div>
 

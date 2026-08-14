@@ -19,6 +19,8 @@ export default function Home() {
 
   useEffect(() => {
     const draft = getDraft()
+    // If the last assessment was already exported (complete), start fresh instead of restoring it.
+    if (draft && draft.status === 'complete') { clearDraft(); return }
     if (draft && !draftRestored) {
       setAssessment(draft)
       setStep(STEPS.SELECT)

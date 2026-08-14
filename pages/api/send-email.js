@@ -7,12 +7,11 @@ export default async function handler(req, res) {
   if (!assessment || !recipientEmail) return res.status(400).json({ error: 'Missing required fields' })
 
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.office365.com',
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: false,
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    tls: { ciphers: 'SSLv3', rejectUnauthorized: false },
-  })
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT || '587'),
+  secure: false,            // STARTTLS on port 587
+  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+})
 
   const { patient_name, assessor_name, assessor_email, assessment_date, product, client } = assessment
   const filename = `BHS_Assessment_${(patient_name||'Patient').replace(/\s+/g,'_')}_${(assessment_date||'').replace(/\//g,'-')}.pdf`

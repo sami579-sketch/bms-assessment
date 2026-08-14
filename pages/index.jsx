@@ -50,7 +50,11 @@ export default function Home() {
   }, [])
 
   const handleProfileComplete = (profileData) => {
-    const a = { id: generateId(), ...profileData, wheelchair_data: null, standing_data: null, status: 'draft', created_at: new Date().toISOString() }
+    // Editing an existing assessment: merge changes, keep id + measurements + status.
+    // New assessment: create a fresh record.
+    const a = assessment
+      ? { ...assessment, ...profileData }
+      : { id: generateId(), ...profileData, wheelchair_data: null, standing_data: null, status: 'draft', created_at: new Date().toISOString() }
     setAssessment(a)
     setStep(STEPS.SELECT)
     saveToSupabase(a)
@@ -172,7 +176,7 @@ export default function Home() {
           </div>
 
           {step === STEPS.PROFILE && (
-            <PatientProfile data={{}} onComplete={handleProfileComplete} />
+            <PatientProfile data={assessment || {}} onComplete={handleProfileComplete} />
           )}
           {step === STEPS.SELECT && assessment && (
             <div className="space-y-4">
@@ -210,6 +214,7 @@ export default function Home() {
                 onEditWheelchair={() => setStep(STEPS.WHEELCHAIR)}
                 onEditStanding={() => setStep(STEPS.STANDING)}
                 onNewAssessment={handleNewAssessment}
+                onComplete={(updated) => setAssessment(updated)}
               />
             </div>
           )}

@@ -3,41 +3,58 @@ import toast from 'react-hot-toast'
 import { downloadPDF, getPDFBase64 } from '../lib/pdf'
 import { StatusBadge } from './FormElements'
 
-export default function ReviewPanel({ assessment, onEditProfile, onEditWheelchair, onEditStanding, onNewAssessment }) {
+export default function ReviewPanel({ assessment, onEditProfile, onEditWheelchair, onEditStanding, onNewAssessment, onComplete }) {
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
 
   const hasWheelchair = assessment.wheelchair_data && Object.keys(assessment.wheelchair_data).length > 0
   const hasStanding = assessment.standing_data && Object.keys(assessment.standing_data).length > 0
 
-  // Single click: export PDF to device + email assessor automatically
+  // Single click: mark complete → back up to DB → export PDF to device → email assessor
   const handleExportAndSend = async () => {
     if (loading || done) return
     setLoading(true)
     const toastId = toast.loading('Generating PDF...')
 
+    // Finalise: status "complete" shows in the PDF and in the Supabase backup.
+    const finalAssessment = { ...assessment, status: 'complete' }
+
     try {
-      // Step 1: Download PDF to device
-      await downloadPDF(assessment)
-      toast.loading('Sending to ' + assessment.assessor_email + '...', { id: toastId })
+      // Step 1: Back up the completed assessment to the database (warn, don't block, if it fails)
+      try {
+        const saveRes = await fetch('/api/assessments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ assessment: finalAssessment }),
+        })
+        if (!saveRes.ok) {
+          const e = await saveRes.json().catch(() => ({}))
+          throw new Error(e.error || 'database save failed')
+        }
+      } catch (dbErr) {
+        toast.error(`Database backup failed — please check your connection: ${dbErr.message}`, { duration: 8000 })
+      }
+      onComplete?.(finalAssessment)
 
-      // Step 2: Get base64 for email
-      const pdfBase64 = await getPDFBase64(assessment)
+      // Step 2: Download PDF to device (now marked Complete)
+      await downloadPDF(finalAssessment)
+      toast.loading('Sending to ' + finalAssessment.assessor_email + '...', { id: toastId })
 
-      // Step 3: Send email to assessor automatically
+      // Step 3: Email the assessor automatically
+      const pdfBase64 = await getPDFBase64(finalAssessment)
       const res = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          assessment,
-          recipientEmail: assessment.assessor_email,
+          assessment: finalAssessment,
+          recipientEmail: finalAssessment.assessor_email,
           pdfBase64,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Email failed')
 
-      toast.success(`PDF saved & sent to ${assessment.assessor_email}`, { id: toastId, duration: 6000 })
+      toast.success(`PDF saved & sent to ${finalAssessment.assessor_email}`, { id: toastId, duration: 6000 })
       setDone(true)
     } catch (err) {
       // PDF downloaded but email failed — still show partial success
